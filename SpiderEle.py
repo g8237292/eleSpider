@@ -1,8 +1,12 @@
 import fcntl
+import sys
 import time
 import json
+from optparse import OptionParser
+
 import requests
 import logging
+import datetime
 
 logging.basicConfig(
     datefmt='%a, %d %b %Y %H:%M:%S',
@@ -10,9 +14,11 @@ logging.basicConfig(
 
 class SpiderEle(object):
 
-    def __init__(self, latitude, longitude, rank_id):
-        self.latitude = latitude
-        self.longitude = longitude
+    def __init__(self, address, rank_id):
+        self.address = address
+        data = self.get_json(self.address)
+        self.latitude = data.get('latitude')
+        self.longitude = data.get('longitude')
         self.rank_id = rank_id
 
         self.cookies_filename = "eleapi_cookies.txt"
@@ -42,11 +48,17 @@ class SpiderEle(object):
             "sec-fetch-mode": "cors",
             "sec-fetch-site": "same-origin",
             "user-agent": "Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Mobile Safari/537.36",
-            "x-shard": "loc={longitude},{latitude}, loc={longitude},{latitude}".format(longitude=longitude,
-                                                                                       latitude=latitude)
+            "x-shard": "loc={longitude},{latitude}, loc={longitude},{latitude}".format(longitude=self.longitude,
+                                                                                       latitude=self.latitude)
         }
 
         self.session = requests.session()
+
+    def get_json(self, address):
+        with open("latitude_longitude.json") as j:
+            datas = json.load(j)
+            data = datas.get(address)
+            return data
 
     def read_cookies(self, filename):
         with open(filename, 'rb') as f:
@@ -56,7 +68,7 @@ class SpiderEle(object):
         # h5_url = "https://h5.ele.me/restapi/shopping/v3/restaurants?latitude={latitude}&longitude={longitude}&offset={offset}&limit=8&extras[]=activities&extras[]=tags&extra_filters=home&rank_id={rank_id}&terminal=h5".format(
         #     latitude=self.latitude, longitude=self.longitude, rank_id=self.rank_id, offset=offset * 8
         # )
-        h5_url = 'https://h5.ele.me/restapi/shopping/v3/restaurants?latitude={latitude}&longitude={longitude}&offset={offset}&limit=8&extras[]=activities&extras[]=tags&extra_filters=home&rank_id={rank_id}&terminal=h5'.format(
+        h5_url = 'https://h5.ele.me/restapi/shopping/v3/restaurants?latitude={latitude}&longitude={longitude}&offset={offset}&limit=8&extras[]=activities&extras[]=tags&extra_filters=home&order_by=5&rank_id={rank_id}&terminal=h5'.format(
             latitude=self.latitude, longitude=self.longitude, offset=offset*8, rank_id=self.rank_id)
         r = self.session.get(h5_url, headers=self.header)
         wb_data = r.json()
@@ -124,7 +136,8 @@ class SpiderEle(object):
 
 
     def write_info_txt(self, info):
-        with open("shop_info.csv", "a") as f:
+        path = '/Users/xulun/PycharmProjects/Pyppeteer/infomation10/'
+        with open(path+self.address + datetime.datetime.now().strftime("%m-%d")+'.csv', "a+") as f:
             f.write('{name},{is_new},{is_premium},{cate},{month_sale},{activity},{url},{phone},{address}\n'.format(
                 name=info.get('name'),
                 url=info.get('scheme'),
@@ -174,9 +187,21 @@ class SpiderEle(object):
 
 
 if __name__ == '__main__':
-    i = 51
-    spider = SpiderEle('24.535362', '118.108128', '4ccb37ebcca34b4787e51492a4893f7d')
+    parser = OptionParser()
+    parser.add_option('-a', '--address', dest='address', help='address')
+    parser.add_option('-r', '--rank_id', dest='rank_id', help='rank_id')
+    parser.add_option('-p', '--page', dest='page', help='page start', type=int, default=1)
+
+    options, args = parser.parse_args(sys.argv[1:])
+    address = options.address
+    page = options.page
+    rank_id = options.rank_id
+
+    spider = SpiderEle(address, rank_id=rank_id)
     while True:
-        if not spider.get_restaurant_info(i):
+        if not spider.get_restaurant_info(page):
+            logging.error("place:{}".format(address))
             break
-        i += 1
+        # if i >= 44:
+        #     break
+        page += 1
