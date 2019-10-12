@@ -1,4 +1,5 @@
 import fcntl
+import os
 import sys
 import time
 import json
@@ -22,8 +23,10 @@ class SpiderEle(object):
         self.rank_id = rank_id
 
         self.cookies_filename = "eleapi_cookies.txt"
-
         self.cookies = self.read_cookies(self.cookies_filename)
+
+        self.month =datetime.datetime.now().strftime('%m')
+        self.info_dir = '../infomation{}/' .format(self.month)
 
         self.shop_header = {
             "accept": "application/json, text/plain, */*",
@@ -136,8 +139,9 @@ class SpiderEle(object):
 
 
     def write_info_txt(self, info):
-        path = '/Users/xulun/PycharmProjects/Pyppeteer/infomation10/'
-        with open(path+self.address + datetime.datetime.now().strftime("%m-%d")+'.csv', "a+") as f:
+        if not os.path.exists(self.info_dir):
+            os.mkdir(self.info_dir)
+        with open(self.info_dir+self.address + '.csv', "a+") as f:
             f.write('{name},{is_new},{is_premium},{cate},{month_sale},{activity},{url},{phone},{address}\n'.format(
                 name=info.get('name'),
                 url=info.get('scheme'),
@@ -189,9 +193,8 @@ class SpiderEle(object):
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option('-a', '--address', dest='address', help='address')
-    parser.add_option('-r', '--rank_id', dest='rank_id', help='rank_id')
+    parser.add_option('-r', '--rank_id', dest='rank_id', help='rank_id', default="")
     parser.add_option('-p', '--page', dest='page', help='page start', type=int, default=1)
-
     options, args = parser.parse_args(sys.argv[1:])
     address = options.address
     page = options.page
@@ -200,8 +203,6 @@ if __name__ == '__main__':
     spider = SpiderEle(address, rank_id=rank_id)
     while True:
         if not spider.get_restaurant_info(page):
-            logging.error("place:{}".format(address))
+            logging.error("place:{}\n page:{}".format(address, page))
             break
-        # if i >= 44:
-        #     break
         page += 1
