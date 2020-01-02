@@ -26,7 +26,7 @@ class SpiderEle(object):
         self.cookies = self.read_cookies(self.cookies_filename)
 
         self.month =datetime.datetime.now().strftime('%m')
-        self.info_dir = '../infomation{}/' .format(self.month)
+        self.info_dir = './infomation{}/' .format(self.month)
 
         self.shop_header = {
             "accept": "application/json, text/plain, */*",
@@ -163,16 +163,36 @@ class SpiderEle(object):
 
     def get_phone_address(self, shop_id):
         address, phone = " ", " "
+        """
+        {"sub_channel":"","business_type":0,"geohash":"wsk53m9uwbdd","user_id":20566431,"add_on_type":0,"restaurant_id":"E8461406814555919765","come_from":"mobile","additional_actions":[71],"entities":[[]],"entities_with_ingredient":[[]],"operating_sku_ids":[],"tying_sku_entities":[[]],"packages":[[]]}
+        """
         data = {
-            "add_on_type": 0,
-            "additional_actions": [],
+            "sub_channel": "",
             "business_type": 0,
-            "come_from": "mobile",
-            "entities": [[]],
+            # "geohash": "wsk53m9uwbdd",
+            "geohash": "",
+            # "user_id": 20566431,
+            "user_id": "",
+            "add_on_type": 0,
             "restaurant_id": shop_id,
+            "come_from": "mobile",
+            "additional_actions": [71],
+            "entities": [[]],
             "entities_with_ingredient": [[]],
-            "packages": [[]],
+            "operating_sku_ids": [],
+            "tying_sku_entities": [[]],
+            "packages": [[]]
         }
+        # data = {
+        #     "add_on_type": 0,
+        #     "additional_actions": [],
+        #     "business_type": 0,
+        #     "come_from": "mobile",
+        #     "entities": [[]],
+        #     "restaurant_id": shop_id,
+        #     "entities_with_ingredient": [[]],
+        #     "packages": [[]],
+        # }
         url = "https://h5.ele.me/restapi/booking/v1/cart_client"
         time.sleep(3)
         r = self.session.post(url, data=data, headers=self.shop_header)
